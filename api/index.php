@@ -6,6 +6,14 @@
 
 // Define storage location in the writable /tmp filesystem
 $storagePath = '/tmp/storage';
+
+// Force HTTPS in serverless environment behind Vercel reverse proxy
+if ((isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+    || (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on')
+    || !empty($_ENV['VERCEL']) || !empty($_SERVER['VERCEL'])) {
+    $_SERVER['HTTPS'] = 'on';
+    $_SERVER['SERVER_PORT'] = '443';
+}
 $_ENV['LARAVEL_STORAGE_PATH'] = $storagePath;
 $_ENV['APP_CONFIG_CACHE'] = $_ENV['APP_CONFIG_CACHE'] ?? '/tmp/config.php';
 $_ENV['APP_EVENTS_CACHE'] = $_ENV['APP_EVENTS_CACHE'] ?? '/tmp/events.php';
