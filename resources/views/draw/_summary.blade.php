@@ -15,7 +15,7 @@
   @elseif ($summary['lead_gap'] === 0)
     <div class="panel" id="warn">
       ✓ <b>Pas:</b> {{ $summary['leads'] }} PM/SM/ATM untuk {{ $summary['rooms'] }} kamar.
-      Setiap kamar tepat mendapat 1; kamar tiap orang diacak.
+      Setiap kamar wajib ada 1 PM/SM/ATM, minimal 1 Programmer, dan minimal 1 Implementor.
     </div>
   @else
     <div class="panel warn" id="warn">

@@ -202,6 +202,34 @@ class DrawPlannerTest extends TestCase
         $this->assertSame(0, $s['lead_gap']);
     }
 
+    public function test_every_room_has_at_least_one_programmer_and_one_implementor(): void
+    {
+        // 11 Lead (8 PM, 2 SM, 1 ATM), 13 Programmer, 16 Implementor, 1 Backbone = 41 orang -> 11 kamar
+        $people = [];
+        for ($i = 1; $i <= 8; $i++) $people[] = ['name' => 'PM' . $i, 'role' => 'pm'];
+        for ($i = 1; $i <= 2; $i++) $people[] = ['name' => 'SM' . $i, 'role' => 'sm'];
+        $people[] = ['name' => 'ATM1', 'role' => 'atm'];
+        for ($i = 1; $i <= 13; $i++) $people[] = ['name' => 'PRG' . $i, 'role' => 'prg'];
+        for ($i = 1; $i <= 16; $i++) $people[] = ['name' => 'IMP' . $i, 'role' => 'imp'];
+        $people[] = ['name' => 'BB1', 'role' => 'bb'];
+
+        for ($run = 0; $run < 50; $run++) {
+            $plan = DrawPlanner::plan($people, 4, self::LEAD);
+            $rooms = $this->roomsOf($plan);
+
+            $this->assertCount(11, $rooms);
+            foreach ($rooms as $room => $members) {
+                $leads = count(array_filter($members, fn ($m) => in_array($m['role'], self::LEAD, true)));
+                $prgs  = count(array_filter($members, fn ($m) => $m['role'] === 'prg'));
+                $imps  = count(array_filter($members, fn ($m) => $m['role'] === 'imp'));
+
+                $this->assertSame(1, $leads, "Kamar $room harus memiliki tepat 1 lead");
+                $this->assertGreaterThanOrEqual(1, $prgs, "Kamar $room wajib ada minimal 1 programmer");
+                $this->assertGreaterThanOrEqual(1, $imps, "Kamar $room wajib ada minimal 1 implementor");
+            }
+        }
+    }
+
     public function test_empty_and_invalid_input_throw(): void
     {
         $this->expectException(InvalidArgumentException::class);

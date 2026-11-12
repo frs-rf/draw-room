@@ -13,4 +13,7 @@ return [
         'imp' => ['tag' => 'IMP', 'css' => 't-imp', 'label' => 'Implementor',              'lead' => false],
         'bb'  => ['tag' => 'BB',  'css' => 't-bb',  'label' => 'Backbone',                 'lead' => false],
     ],
+
+    // Role yang wajib disebar merata minimal 1 per kamar bila jumlahnya cukup
+    'balanced_roles' => ['prg', 'imp'],
 ];

@@ -91,7 +91,7 @@ function start(app) {
       d.className = 'room'; d.id = 'room' + r;
       let h = '<div class="rh"><div class="num" style="background:' + COL[r % COL.length] + '">' + (r + 1) +
         '</div><div><div class="rn">Kamar ' + (r + 1) + '</div><div class="rs">' +
-        (leadSet.has(r) ? '✓ Wajib ada PM/SM/ATM' : 'Tanpa PM/SM/ATM') + ' · ' + c + ' orang</div></div></div>';
+        (leadSet.has(r) ? '✓ Wajib PM, PRG, IMP' : '✓ Wajib PRG, IMP') + ' · ' + c + ' orang</div></div></div>';
       for (let s = 0; s < c; s++) h += '<div class="slot" id="s' + r + '-' + s + '">—</div>';
       d.innerHTML = h; b.appendChild(d);
     });
@@ -201,8 +201,17 @@ function start(app) {
     const gen = S.gen, st = item.step;
     const alive = () => gen === S.gen;
     hideNext();
-    $('phase').textContent = 'Putaran ' + (st.round || 1) + ' dari ' + S.rounds + ' · ' +
-      (st.lead ? 'PM / SM / ATM tiap kamar' : 'Mengisi kamar');
+    let phaseDesc = 'Mengisi kamar';
+    if (st.lead) {
+      phaseDesc = 'PM / SM / ATM tiap kamar';
+    } else if (st.round === 2) {
+      phaseDesc = 'Programmer tiap kamar';
+    } else if (st.round === 3) {
+      phaseDesc = 'Implementor tiap kamar';
+    } else {
+      phaseDesc = 'Melengkapi sisa kamar';
+    }
+    $('phase').textContent = 'Putaran ' + (st.round || 1) + ' dari ' + S.rounds + ' · ' + phaseDesc;
     $('target').innerHTML = 'Menuju <b>Kamar ' + (st.room + 1) + '</b>';
     glow(st.room);
     // Cepat: dipilih panitia, atau penonton sedang tertinggal (antrean menumpuk).

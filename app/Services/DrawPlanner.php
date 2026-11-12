@@ -45,21 +45,38 @@ final class DrawPlanner
      * @param  array<int, array{name:string, role:string}>  $people
      * @param  array<int, string>  $leadRoles
      * @param  (callable(array): array)|null  $shuffle  injeksi untuk tes
+     * @param  array<int, string>|null  $balancedRoles  role wajib per kamar (mis. prg & imp)
      * @return array{caps:int[], lead_rooms:int[], steps:array<int, array<string,mixed>>}
      */
-    public static function plan(array $people, int $roomSize, array $leadRoles, ?callable $shuffle = null): array
+    public static function plan(
+        array $people,
+        int $roomSize,
+        array $leadRoles,
+        ?callable $shuffle = null,
+        ?array $balancedRoles = null
+    ): array
     {
         self::guard($people, $roomSize);
         $shuffle ??= [self::class, 'shuffle'];
+        $balancedRoles ??= (function_exists('config') ? config('draw.balanced_roles', ['prg', 'imp']) : ['prg', 'imp']);
 
         $total = count($people);
         $rooms = (int) ceil($total / $roomSize);
         $caps  = self::capacities($total, $rooms);
 
-        $leads = $rest = [];
+        $leads = [];
+        $byRole = [];
+        foreach ($balancedRoles as $br) {
+            $byRole[$br] = [];
+        }
+        $rest = [];
+
         foreach ($people as $p) {
-            if (in_array($p['role'], $leadRoles, true)) {
+            $role = $p['role'];
+            if (in_array($role, $leadRoles, true)) {
                 $leads[] = $p;
+            } elseif (in_array($role, $balancedRoles, true)) {
+                $byRole[$role][] = $p;
             } else {
                 $rest[] = $p;
             }
@@ -69,7 +86,7 @@ final class DrawPlanner
         $take  = min(count($leads), $rooms);
 
         // Kelebihan lead masuk kolam peserta biasa.
-        $rest  = $shuffle(array_merge($rest, array_slice($leads, $take)));
+        $rest  = array_merge($rest, array_slice($leads, $take));
         $leads = array_slice($leads, 0, $take);
 
         // Kamar penerima lead dipilih acak dari SEMUA kamar. Urutan ini
@@ -80,13 +97,47 @@ final class DrawPlanner
         $steps = [];
 
         // Putaran 1: PM/SM/ATM (satu per kamar penerima).
-        foreach ($leads as $i => $p) {
-            $room    = $leadRooms[$i];
-            $steps[] = self::step($p, $room, $count[$room]++, true, 1);
+        if ($take > 0) {
+            foreach ($leads as $i => $p) {
+                $room    = $leadRooms[$i];
+                $steps[] = self::step($p, $room, $count[$room]++, true, 1);
+            }
+            $round = 2;
+        } else {
+            $round = 1;
         }
 
-        // Putaran berikutnya: tiap putaran = satu orang per kamar yang masih punya slot, urutan kamar acak.
-        $round = $take > 0 ? 2 : 1;
+        // Putaran untuk role yang wajib seimbang (mis. Programmer lalu Implementor)
+        foreach ($balancedRoles as $bRole) {
+            $pool = $shuffle($byRole[$bRole] ?? []);
+            if (empty($pool)) {
+                continue;
+            }
+
+            // Cari kamar yang masih punya slot
+            $availableRooms = array_values(array_filter(
+                range(0, $rooms - 1),
+                fn ($k) => $count[$k] < $caps[$k]
+            ));
+
+            $takeRole = min(count($pool), count($availableRooms));
+            if ($takeRole > 0) {
+                $chosenRooms = array_slice($shuffle($availableRooms), 0, $takeRole);
+                foreach ($chosenRooms as $room) {
+                    $p = array_shift($pool);
+                    $steps[] = self::step($p, $room, $count[$room]++, false, $round);
+                }
+                $round++;
+            }
+
+            // Sisa role ini (jika ada lebih banyak dari jumlah kamar) masuk kolam umum
+            if (!empty($pool)) {
+                $rest = array_merge($rest, $pool);
+            }
+        }
+
+        // Putaran sisa peserta: tiap putaran = satu orang per kamar yang masih punya slot, urutan kamar acak.
+        $rest = $shuffle($rest);
         while ($rest) {
             $placed = 0;
             // Urutan kamar diacak ulang di tiap putaran (bukan 1, 2, 3, ...).

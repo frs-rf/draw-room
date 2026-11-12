@@ -96,8 +96,9 @@ class Draw extends Model
         $step = $this->steps[$index];
 
         $candidates = [];
+        $currentRound = $step['round'] ?? 1;
         foreach (array_slice($this->steps, $index) as $s) {
-            if ($s['lead'] === $step['lead']) {
+            if (($s['round'] ?? 1) === $currentRound) {
                 $candidates[] = $s['name'];
             }
         }
