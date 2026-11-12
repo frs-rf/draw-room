@@ -14,6 +14,19 @@ $_ENV['APP_ROUTES_CACHE'] = $_ENV['APP_ROUTES_CACHE'] ?? '/tmp/routes.php';
 $_ENV['APP_SERVICES_CACHE'] = $_ENV['APP_SERVICES_CACHE'] ?? '/tmp/services.php';
 $_ENV['VIEW_COMPILED_PATH'] = $_ENV['VIEW_COMPILED_PATH'] ?? $storagePath . '/framework/views';
 
+// Fallback APP_KEY if not yet set in Vercel Environment Variables
+if (empty($_ENV['APP_KEY']) && empty($_SERVER['APP_KEY']) && !getenv('APP_KEY')) {
+    $_ENV['APP_KEY'] = 'base64:oZXQDC1ako8W2Nc0YjUSj+uG/CbWJoEQQgGYqrZl7TE=';
+    putenv('APP_KEY=base64:oZXQDC1ako8W2Nc0YjUSj+uG/CbWJoEQQgGYqrZl7TE=');
+}
+
+// Fallback DB_URL from DATABASE_URL
+$dbUrl = $_ENV['DATABASE_URL'] ?? ($_SERVER['DATABASE_URL'] ?? getenv('DATABASE_URL'));
+if ($dbUrl && empty($_ENV['DB_URL'])) {
+    $_ENV['DB_URL'] = $dbUrl;
+    putenv('DB_URL=' . $dbUrl);
+}
+
 // Ensure necessary directory tree exists in /tmp
 $dirs = [
     $storagePath,
