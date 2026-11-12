@@ -250,8 +250,8 @@ async function migrate() {
   const userRes = await sql`SELECT id FROM users WHERE username = 'panitia';`;
   if (!userRes.length) {
     const now = new Date().toISOString();
-    // bcrypt hash of "password123" with rounds 12
-    const passHash = '$2y$12$6t/L6PekxR3t7zL5H6Vq8.xPZ5v9c1Q1T2U3V4W5X6Y7Z8a9b0cde';
+    // bcrypt hash of "password" with rounds 12
+    const passHash = '$2y$12$IZJHpTGGFOOmqbGKx1ZNau4aoM4T3koz2aEjl5OgZUmfSs.SKd3wq';
     await sql`
       INSERT INTO users (name, username, email, password, created_at, updated_at)
       VALUES ('Panitia Draw', 'panitia', 'panitia@panitia.local', ${passHash}, ${now}, ${now});
