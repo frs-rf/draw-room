@@ -1,0 +1,569 @@
+      :root {
+        box-sizing: border-box;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        --sky: #d9f1f8;
+        --sand: #fbf0d9;
+        --ink: #0b3a53;
+        --ink2: #3d6c82;
+        --card: rgba(255, 255, 255, 0.78);
+        --line: #a9d9e8;
+        --sea: #0e8fb5;
+        --deep: #0a5f86;
+        --sun: #ff8a3d;
+        --coral: #ff6b5e;
+        --teal: #1fb5a0;
+        --slot: rgba(14, 143, 181, 0.07);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --sky: #06202d;
+          --sand: #0a2c3b;
+          --ink: #eaf7fb;
+          --ink2: #9fcbdb;
+          --card: rgba(13, 52, 70, 0.82);
+          --line: #1d5b75;
+          --sea: #38bde0;
+          --deep: #1d8db3;
+          --sun: #ffa05c;
+          --coral: #ff8579;
+          --teal: #3fd3bd;
+          --slot: rgba(56, 189, 224, 0.1);
+        }
+      }
+      :root[data-theme="dark"] {
+        --sky: #06202d;
+        --sand: #0a2c3b;
+        --ink: #eaf7fb;
+        --ink2: #9fcbdb;
+        --card: rgba(13, 52, 70, 0.82);
+        --line: #1d5b75;
+        --sea: #38bde0;
+        --deep: #1d8db3;
+        --sun: #ffa05c;
+        --coral: #ff8579;
+        --teal: #3fd3bd;
+        --slot: rgba(56, 189, 224, 0.1);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+      }
+      body {
+        margin: 0;
+        font-family: "Inter", system-ui, sans-serif;
+        color: var(--ink);
+        background-color: var(--sky);
+        background-image: linear-gradient(
+          var(--sky) 0,
+          var(--sky) 35%,
+          var(--sand) 100%
+        );
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      header {
+        text-align: center;
+        padding: 28px 16px 0;
+        position: relative;
+      }
+      .eyebrow {
+        font-family: "Baloo 2", sans-serif;
+        font-weight: 800;
+        letter-spacing: 0.3em;
+        font-size: 13px;
+        color: var(--sun);
+        text-transform: uppercase;
+      }
+      .banner {
+        width: min(94vw, 760px);
+        border-radius: 20px;
+        display: block;
+        margin: 10px auto 0;
+        box-shadow: 0 18px 44px rgba(10, 95, 134, 0.35);
+        border: 4px solid #fff;
+      }
+      h1 {
+        font-family: "Pacifico", cursive;
+        font-weight: 400;
+        font-size: clamp(32px, 6vw, 60px);
+        margin: 18px 0 4px;
+        color: var(--deep);
+        line-height: 1.15;
+      }
+      .sub {
+        font-size: 15px;
+        color: var(--ink2);
+        margin: 0 0 6px;
+      }
+      .wave {
+        display: block;
+        width: 200%;
+        height: 54px;
+        animation: drift 12s linear infinite;
+        margin-top: 6px;
+      }
+      .wave.b {
+        margin-top: -40px;
+        animation-duration: 18s;
+        animation-direction: reverse;
+        opacity: 0.6;
+      }
+      @keyframes drift {
+        to {
+          transform: translateX(-50%);
+        }
+      }
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 6px 18px 70px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+        backdrop-filter: blur(4px);
+      }
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 14px;
+      }
+      .stat {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 10px 18px;
+        text-align: center;
+        min-width: 110px;
+      }
+      .stat b {
+        display: block;
+        font-family: "Baloo 2", sans-serif;
+        font-size: 28px;
+        color: var(--sea);
+        line-height: 1.1;
+      }
+      .stat span {
+        font-size: 12px;
+        color: var(--ink2);
+      }
+      .warn {
+        border-color: var(--sun);
+        background: var(--card);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .warn b {
+        color: var(--sun);
+      }
+      .btn {
+        font-family: "Baloo 2", sans-serif;
+        font-weight: 800;
+        font-size: 16px;
+        border: 0;
+        border-radius: 999px;
+        padding: 11px 26px;
+        cursor: pointer;
+        transition:
+          transform 0.12s,
+          box-shadow 0.12s;
+      }
+      .btn:focus-visible {
+        outline: 3px solid var(--sun);
+        outline-offset: 2px;
+      }
+      .btn.pri {
+        background: linear-gradient(135deg, var(--sun), var(--coral));
+        color: #fff;
+        box-shadow: 0 6px 18px rgba(255, 107, 94, 0.4);
+      }
+      .btn.pri:hover {
+        transform: translateY(-2px);
+      }
+      .btn.gh {
+        background: var(--card);
+        color: var(--deep);
+        border: 1.5px solid var(--sea);
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin: 16px 0;
+      }
+      details {
+        margin-top: 8px;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 700;
+        color: var(--deep);
+        padding: 4px 0;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 8px 0 4px;
+      }
+      .chip {
+        font-size: 12.5px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 10px;
+        background: var(--slot);
+      }
+      .grp {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink2);
+        margin-top: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .tag {
+        display: inline-block;
+        font-family: "Baloo 2", sans-serif;
+        font-weight: 800;
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        padding: 1px 7px;
+        border-radius: 6px;
+        color: #fff;
+        margin-right: 7px;
+        vertical-align: 1px;
+      }
+      .t-pm {
+        background: var(--sun);
+      }
+      .t-prg {
+        background: var(--sea);
+      }
+      .t-imp {
+        background: var(--teal);
+      }
+      .t-bb {
+        background: var(--coral);
+      }
+      .t-sm{background:#7a6fe0}.t-atm{background:#b05fd0}
+      .reveal-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 10px 0 24px;
+      }
+      .phase {
+        font-family: "Baloo 2", sans-serif;
+        font-weight: 800;
+        letter-spacing: 0.2em;
+        font-size: 13px;
+        text-transform: uppercase;
+        color: var(--sun);
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      .rcard {
+        width: min(94vw, 540px);
+        height: 130px;
+        perspective: 800px;
+      }
+      .rin {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        text-align: center;
+        padding: 0 16px;
+        border-radius: 20px;
+        background: linear-gradient(160deg, var(--sea), var(--deep));
+        color: #fff;
+        font-family: "Baloo 2", sans-serif;
+        font-weight: 800;
+        font-size: clamp(22px, 4.6vw, 36px);
+        line-height: 1.1;
+        box-shadow:
+          0 0 0 6px rgba(14, 143, 181, 0.15),
+          0 18px 36px rgba(10, 95, 134, 0.3);
+        transition: transform 0.15s ease-in;
+      }
+      .rin small {
+        font-family: "Inter", sans-serif;
+        font-weight: 600;
+        font-size: 13px;
+        opacity: 0.9;
+      }
+      .rcard.flip .rin {
+        transform: rotateX(90deg);
+      }
+      .rcard.land .rin {
+        animation: pop 0.5s ease;
+        box-shadow:
+          0 0 0 6px rgba(255, 138, 61, 0.35),
+          0 0 46px rgba(255, 138, 61, 0.5);
+      }
+      @keyframes pop {
+        0% {
+          transform: scale(0.92);
+        }
+        60% {
+          transform: scale(1.04);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      .target {
+        margin-top: 12px;
+        font-size: 15px;
+        color: var(--ink2);
+      }
+      .target b {
+        color: var(--sun);
+        font-size: 19px;
+      }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+        gap: 14px;
+      }
+      .room {
+        background: var(--card);
+        border: 1.5px solid var(--line);
+        border-radius: 18px;
+        padding: 12px;
+        transition:
+          box-shadow 0.3s,
+          border-color 0.3s;
+      }
+      .room.glow {
+        border-color: var(--sun);
+        box-shadow: 0 0 28px rgba(255, 138, 61, 0.45);
+      }
+      .rh {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .num {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Baloo 2", sans-serif;
+        font-weight: 800;
+        font-size: 20px;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .rn {
+        font-family: "Baloo 2", sans-serif;
+        font-weight: 800;
+        font-size: 17px;
+        line-height: 1;
+      }
+      .rs {
+        font-size: 11px;
+        color: var(--ink2);
+      }
+      .slot {
+        font-size: 13px;
+        padding: 7px 9px;
+        border-radius: 9px;
+        background: var(--slot);
+        border: 1px dashed var(--line);
+        color: var(--ink2);
+        margin-top: 6px;
+        min-height: 34px;
+        display: flex;
+        align-items: center;
+      }
+      .slot.on {
+        border: 1px solid transparent;
+        color: var(--ink);
+        font-weight: 600;
+        animation: in 0.35s ease;
+      }
+      .slot.pmslot {
+        border-color: var(--sun);
+      }
+      @keyframes in {
+        from {
+          opacity: 0;
+          transform: translateY(-6px) scale(0.96);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .fin {
+        text-align: center;
+        margin-top: 26px;
+      }
+      .fin h2 {
+        font-family: "Pacifico", cursive;
+        font-weight: 400;
+        font-size: 34px;
+        color: var(--sun);
+        margin: 0 0 6px;
+      }
+      .cf {
+        position: fixed;
+        top: -12px;
+        width: 9px;
+        height: 14px;
+        z-index: 9;
+        border-radius: 2px;
+      }
+      .snd {
+        position: absolute;
+        right: 14px;
+        top: calc(10px + env(safe-area-inset-top, 0px));
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--ink);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .wave,
+        .rin,
+        .slot,
+        .rcard .rin {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+
+      /* ===== tambahan Laravel: status koneksi, bar panitia, login ===== */
+      .conn {
+        position: absolute;
+        left: 14px;
+        top: calc(10px + env(safe-area-inset-top, 0px));
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 13px;
+        color: var(--ink2);
+      }
+      .conn.live { color: var(--teal); }
+      .conn.off { color: var(--coral); }
+      .topbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 18px;
+        background: var(--deep);
+        color: #fff;
+        font-size: 13px;
+      }
+      .topbar a, .topbar button {
+        color: #fff;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 999px;
+        padding: 4px 12px;
+        font: inherit;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .topbar form { display: inline; margin: 0; }
+      .topbar .links { display: flex; gap: 8px; }
+      .foot { text-align: center; padding: 0 0 28px; font-size: 12px; }
+      .foot a { color: var(--ink2); }
+      .waiting { text-align: center; font-size: 15px; color: var(--ink2); }
+      .login {
+        max-width: 380px;
+        margin: 48px auto;
+        padding: 0 18px;
+      }
+      .login label { display: block; font-weight: 600; font-size: 13px; margin: 12px 0 4px; }
+      .login input[type="text"], .login input[type="password"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--card);
+        color: var(--ink);
+        font: inherit;
+      }
+      .login .chk { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+      .login .err { color: var(--coral); font-size: 13px; margin-top: 6px; }
+
+      /* ===== kelola peserta ===== */
+      .roster { max-width: 980px; margin: 0 auto; padding: 18px 16px 60px; }
+      .roster-title { font-size: 24px; margin: 6px 0 12px; }
+      .roster-h { font-size: 17px; margin: 0 0 10px; }
+      .roster .lock { border: 0; padding: 0; margin: 0; min-width: 0; }
+      .roster .lock:disabled { opacity: 0.55; }
+      .rf { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0; }
+      .rf.add { margin-bottom: 8px; }
+      .rrow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        padding: 8px 0;
+        border-top: 1px solid var(--line);
+        align-items: center;
+      }
+      .in {
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--ink);
+        font: inherit;
+        font-size: 14px;
+        min-width: 0;
+      }
+      .in.grow { flex: 1 1 220px; }
+      .btn.sm { padding: 7px 12px; font-size: 13px; }
+
+      /* ===== tabel kelola peserta ===== */
+      .tools { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+      .tbl-wrap { overflow-x: auto; }
+      .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+      .tbl th, .tbl td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+      .tbl th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink2); }
+      .tbl td.act { white-space: nowrap; }
+      .tbl tr[hidden] { display: none; }
+      .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--line); }
+      .badge.in-draw { color: var(--teal); }
+      .badge.out-draw { color: var(--ink2); }
+      dialog.dlg {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--card);
+        color: var(--ink);
+        padding: 18px;
+        width: min(420px, 92vw);
+      }
+      dialog.dlg::backdrop { background: rgba(0, 0, 0, 0.55); }
+      .dlg label { display: block; font-weight: 600; font-size: 13px; margin: 12px 0 4px; }
+      .dlg .in { width: 100%; box-sizing: border-box; }
