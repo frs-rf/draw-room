@@ -15,7 +15,11 @@ return [
     |
     */
 
-    'default' => env('BROADCAST_CONNECTION', 'null'),
+    'default' => (env('BROADCAST_CONNECTION') === 'pusher' && !env('PUSHER_APP_KEY'))
+        ? 'null'
+        : ((env('BROADCAST_CONNECTION') === 'reverb' && !env('REVERB_APP_KEY'))
+            ? 'null'
+            : env('BROADCAST_CONNECTION', 'null')),
 
     /*
     |--------------------------------------------------------------------------
