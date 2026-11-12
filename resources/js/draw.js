@@ -1,10 +1,12 @@
 /* Live Draw Kamar: satu kode untuk penonton (hanya-baca) dan panitia (penggerak).
  *
  * Alur data:
- *   panitia --POST advance--> server --broadcast (Reverb)--> semua penonton
+ *   panitia --POST advance--> server --broadcast (Pusher / Reverb)--> semua penonton
  * Server adalah sumber kebenaran. Penonton yang telat / putus koneksi
  * mengejar lewat GET /draw/state (polling cadangan + saat reconnect).
  */
+import { createEcho } from './echo';
+
 const app = document.getElementById('draw-app');
 if (app) start(app);
 
@@ -156,6 +158,7 @@ function start(app) {
     hideNext();
     updateControls();
     updatePauseUI();
+    updatePollingSpeed();
     flushIdle();
   }
   function resetToSetup() {
@@ -166,6 +169,7 @@ function start(app) {
     hideNext();
     show('setup');
     updateControls();
+    updatePollingSpeed();
     flushIdle();
   }
 
@@ -238,6 +242,7 @@ function start(app) {
     glow(-1);
     hideNext();
     if (S.draw) S.draw.status = 'finished';
+    updatePollingSpeed();
     $('phase').textContent = 'Selesai';
     $('rin').textContent = '🏆';
     $('target').innerHTML = '&nbsp;';
@@ -293,28 +298,75 @@ function start(app) {
     finally { S.syncing = false; }
   }
 
+  let pollInterval = null;
+
+  function stopPolling() {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+  }
+
+  function startPolling(intervalMs) {
+    stopPolling();
+    pollInterval = setInterval(sync, intervalMs);
+  }
+
+  function updatePollingSpeed() {
+    if (pollInterval) {
+      const active = !!S.draw && S.draw.status === 'running';
+      startPolling(active ? 1000 : 3000);
+    }
+  }
+
   function setConn(kind) {
     const el = $('conn');
     if (!el) return;
     el.className = 'conn ' + kind;
-    el.textContent = kind === 'live' ? '● Live' : kind === 'off' ? '○ Menyambung…' : '◌ Mode cadangan';
+    el.textContent = kind === 'live' ? '● Live' : kind === 'off' ? '○ Menyambung…' : '◌ Live (Polling)';
   }
+
   function wireEcho() {
-    const E = window.Echo;
-    if (!E) { setConn('poll'); setInterval(sync, 3000); return; }
+    const E = createEcho(BOOT);
+    window.Echo = E;
+
+    if (!E) {
+      setConn('poll');
+      startPolling(S.draw && S.draw.status === 'running' ? 1000 : 3000);
+      return;
+    }
+
     E.channel('draw')
       .listen('.draw.started', (e) => applyDraw(e.draw, []))
       .listen('.draw.step', (e) => enqueue(e))
       .listen('.draw.cancelled', (e) => { if (S.draw && S.draw.id === e.draw_id) resetToSetup(); })
-      .listen('.roster.updated', () => { if (!S.draw) location.reload(); }); // daftar peserta berubah
+      .listen('.roster.updated', () => { if (!S.draw) location.reload(); });
+
     const conn = E.connector && E.connector.pusher && E.connector.pusher.connection;
     if (conn) {
-      setConn(conn.state === 'connected' ? 'live' : 'off');
+      const handleState = (state) => {
+        if (state === 'connected') {
+          setConn('live');
+          stopPolling();
+        } else if (state === 'connecting') {
+          setConn('off');
+          startPolling(1500);
+        } else {
+          setConn('poll');
+          startPolling(S.draw && S.draw.status === 'running' ? 1000 : 3000);
+        }
+      };
+
+      handleState(conn.state);
       conn.bind('state_change', (s) => {
-        setConn(s.current === 'connected' ? 'live' : 'off');
+        handleState(s.current);
         if (s.current === 'connected') sync();
       });
+    } else {
+      setConn('poll');
+      startPolling(1500);
     }
+
     setInterval(sync, 15000); // jaring pengaman bila event ada yang hilang
     document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
   }

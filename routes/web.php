@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 /* ---------- Publik: hanya melihat, tanpa login ---------- */
 Route::get('/', [PublicDrawController::class, 'index'])->name('draw.viewer');
 Route::get('/draw/state', [PublicDrawController::class, 'state'])
-    ->middleware('throttle:60,1')
+    ->middleware('throttle:300,1')
     ->name('draw.state');
 
 /* ---------- Auth panitia ---------- */
