@@ -35,12 +35,22 @@ putenv('DB_CONNECTION=pgsql');
 // Sanitize, normalize, and extract DATABASE_URL
 $rawDbUrl = $_ENV['DATABASE_URL'] ?? ($_SERVER['DATABASE_URL'] ?? (getenv('DATABASE_URL') ?: ($_ENV['DB_URL'] ?? '')));
 if ($rawDbUrl && preg_match('/postgres(?:ql)?:\/\/[^\s"\']+/i', $rawDbUrl, $m)) {
-    $cleanUrl = $m[0];
-    // Remove channel_binding parameter for libpq/pdo_pgsql compatibility
-    $cleanUrl = preg_replace('/[?&]channel_binding=[^&]+/', '', $cleanUrl);
-    if (!str_contains($cleanUrl, 'sslmode=')) {
-        $cleanUrl .= (str_contains($cleanUrl, '?') ? '&' : '?') . 'sslmode=require';
+    $urlBase = explode('?', $m[0])[0];
+    $parts = parse_url($urlBase);
+
+    $dbName = isset($parts['path']) ? trim($parts['path'], '/') : 'neondb';
+    if (str_contains($dbName, '&')) {
+        $dbName = explode('&', $dbName)[0];
     }
+
+    $cleanUrl = sprintf(
+        'postgresql://%s:%s@%s:%s/%s?sslmode=require',
+        $parts['user'] ?? 'neondb_owner',
+        $parts['pass'] ?? '',
+        $parts['host'] ?? '127.0.0.1',
+        $parts['port'] ?? 5432,
+        $dbName
+    );
 
     $_ENV['DATABASE_URL'] = $cleanUrl;
     $_ENV['DB_URL'] = $cleanUrl;
@@ -49,9 +59,7 @@ if ($rawDbUrl && preg_match('/postgres(?:ql)?:\/\/[^\s"\']+/i', $rawDbUrl, $m)) 
     putenv('DATABASE_URL=' . $cleanUrl);
     putenv('DB_URL=' . $cleanUrl);
 
-    // Extract individual connection params for direct fallback in config/database.php
-    $parts = parse_url($cleanUrl);
-    if ($parts && !empty($parts['host'])) {
+    if (!empty($parts['host'])) {
         $_ENV['DB_HOST'] = $parts['host'];
         putenv('DB_HOST=' . $parts['host']);
 
@@ -66,11 +74,11 @@ if ($rawDbUrl && preg_match('/postgres(?:ql)?:\/\/[^\s"\']+/i', $rawDbUrl, $m)) 
             $_ENV['DB_PASSWORD'] = urldecode($parts['pass']);
             putenv('DB_PASSWORD=' . $_ENV['DB_PASSWORD']);
         }
-        if (!empty($parts['path'])) {
-            $dbName = ltrim($parts['path'], '/');
-            $_ENV['DB_DATABASE'] = $dbName;
-            putenv('DB_DATABASE=' . $dbName);
-        }
+        $_ENV['DB_DATABASE'] = $dbName;
+        putenv('DB_DATABASE=' . $dbName);
+
+        $_ENV['DB_SSLMODE'] = 'require';
+        putenv('DB_SSLMODE=require');
     }
 }
 
