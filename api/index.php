@@ -20,6 +20,14 @@ if (empty($_ENV['APP_KEY']) && empty($_SERVER['APP_KEY']) && !getenv('APP_KEY'))
     putenv('APP_KEY=base64:oZXQDC1ako8W2Nc0YjUSj+uG/CbWJoEQQgGYqrZl7TE=');
 }
 
+// Fallback BROADCAST_CONNECTION to null if Pusher is chosen but keys are not configured
+$pusherKey = $_ENV['PUSHER_APP_KEY'] ?? ($_SERVER['PUSHER_APP_KEY'] ?? getenv('PUSHER_APP_KEY'));
+if (empty($pusherKey)) {
+    $_ENV['BROADCAST_CONNECTION'] = 'null';
+    $_SERVER['BROADCAST_CONNECTION'] = 'null';
+    putenv('BROADCAST_CONNECTION=null');
+}
+
 // Ensure DB_CONNECTION is pgsql
 $_ENV['DB_CONNECTION'] = 'pgsql';
 putenv('DB_CONNECTION=pgsql');
