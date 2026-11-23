@@ -10,7 +10,7 @@ final class Roster
     /**
      * Peserta aktif, urut sesuai config('draw.roles') lalu `sort`.
      *
-     * @return array<int, array{name:string, role:string}>
+     * @return array<int, array{name:string, role:string, separated:bool}>
      */
     public static function people(): array
     {
@@ -18,9 +18,9 @@ final class Roster
 
         return Participant::query()
             ->where('active', true)
-            ->get(['id', 'name', 'role', 'sort'])
+            ->get(['id', 'name', 'role', 'sort', 'separated'])
             ->sortBy(fn ($p) => sprintf('%02d-%05d-%08d', $order[$p->role] ?? 99, $p->sort, $p->id))
-            ->map(fn ($p) => ['name' => $p->name, 'role' => $p->role])
+            ->map(fn ($p) => ['name' => $p->name, 'role' => $p->role, 'separated' => (bool) $p->separated])
             ->values()
             ->all();
     }

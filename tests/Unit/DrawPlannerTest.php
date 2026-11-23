@@ -230,6 +230,41 @@ class DrawPlannerTest extends TestCase
         }
     }
 
+    public function test_separated_participants_never_share_the_same_room(): void
+    {
+        // 41 orang, tandai 6 orang (PM, PRG, IMP, BB)
+        $people = [];
+        for ($i = 1; $i <= 8; $i++) $people[] = ['name' => 'PM' . $i, 'role' => 'pm', 'separated' => ($i === 1)];
+        for ($i = 1; $i <= 2; $i++) $people[] = ['name' => 'SM' . $i, 'role' => 'sm', 'separated' => false];
+        $people[] = ['name' => 'ATM1', 'role' => 'atm', 'separated' => false];
+        for ($i = 1; $i <= 13; $i++) $people[] = ['name' => 'PRG' . $i, 'role' => 'prg', 'separated' => in_array($i, [1, 2], true)];
+        for ($i = 1; $i <= 16; $i++) $people[] = ['name' => 'IMP' . $i, 'role' => 'imp', 'separated' => in_array($i, [1, 2], true)];
+        $people[] = ['name' => 'BB1', 'role' => 'bb', 'separated' => true];
+
+        for ($run = 0; $run < 50; $run++) {
+            $plan = DrawPlanner::plan($people, 4, self::LEAD);
+            $rooms = $this->roomsOf($plan);
+
+            $this->assertCount(11, $rooms);
+            foreach ($rooms as $room => $members) {
+                $separatedInRoom = count(array_filter($members, fn ($m) => !empty($m['separated'])));
+                $this->assertLessThanOrEqual(1, $separatedInRoom, "Kamar $room memiliki lebih dari 1 peserta bertanda pisah kamar!");
+            }
+        }
+    }
+
+    public function test_exceeding_separated_count_throws(): void
+    {
+        // 12 orang bertanda pisah kamar tetapi hanya 11 kamar -> harus throw
+        $people = [];
+        for ($i = 1; $i <= 41; $i++) {
+            $people[] = ['name' => 'P' . $i, 'role' => 'prg', 'separated' => $i <= 12];
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        DrawPlanner::plan($people, 4, self::LEAD);
+    }
+
     public function test_empty_and_invalid_input_throw(): void
     {
         $this->expectException(InvalidArgumentException::class);

@@ -29,20 +29,22 @@ final class DrawPlanner
         $total = count($people);
         $rooms = (int) ceil($total / $roomSize);
         $leads = count(array_filter($people, fn ($p) => in_array($p['role'], $leadRoles, true)));
+        $separated = count(array_filter($people, fn ($p) => !empty($p['separated'])));
 
         return [
-            'total'    => $total,
-            'leads'    => $leads,
-            'others'   => $total - $leads,
-            'rooms'    => $rooms,
-            'caps'     => self::capacities($total, $rooms),
+            'total'           => $total,
+            'leads'           => $leads,
+            'others'          => $total - $leads,
+            'rooms'           => $rooms,
+            'caps'            => self::capacities($total, $rooms),
             // > 0: kamar tanpa lead. 0: pas. < 0: lead berlebih.
-            'lead_gap' => $rooms - $leads,
+            'lead_gap'        => $rooms - $leads,
+            'separated_count' => $separated,
         ];
     }
 
     /**
-     * @param  array<int, array{name:string, role:string}>  $people
+     * @param  array<int, array{name:string, role:string, separated?:bool}>  $people
      * @param  array<int, string>  $leadRoles
      * @param  (callable(array): array)|null  $shuffle  injeksi untuk tes
      * @param  array<int, string>|null  $balancedRoles  role wajib per kamar (mis. prg & imp)
@@ -64,6 +66,11 @@ final class DrawPlanner
         $rooms = (int) ceil($total / $roomSize);
         $caps  = self::capacities($total, $rooms);
 
+        $markedCount = count(array_filter($people, fn ($p) => !empty($p['separated'])));
+        if ($markedCount > $rooms) {
+            throw new InvalidArgumentException("Jumlah peserta bertanda pisah kamar ($markedCount) melebihi jumlah kamar ($rooms). Maksimal $rooms orang.");
+        }
+
         $leads = [];
         $byRole = [];
         foreach ($balancedRoles as $br) {
@@ -82,76 +89,165 @@ final class DrawPlanner
             }
         }
 
-        $leads = $shuffle($leads);
-        $take  = min(count($leads), $rooms);
-
-        // Kelebihan lead masuk kolam peserta biasa.
-        $rest  = array_merge($rest, array_slice($leads, $take));
-        $leads = array_slice($leads, 0, $take);
-
-        // Kamar penerima lead dipilih acak dari SEMUA kamar. Urutan ini
-        // juga urutan pengungkapan Babak 1.
-        $leadRooms = array_slice($shuffle(range(0, $rooms - 1)), 0, $take);
-
+        $markedRooms = [];
         $count = array_fill(0, $rooms, 0);
         $steps = [];
 
-        // Putaran 1: PM/SM/ATM (satu per kamar penerima).
-        if ($take > 0) {
-            foreach ($leads as $i => $p) {
-                $room    = $leadRooms[$i];
-                $steps[] = self::step($p, $room, $count[$room]++, true, 1);
+        $splitMarked = function (array $arr) use ($shuffle): array {
+            $marked = [];
+            $unmarked = [];
+            foreach ($arr as $item) {
+                if (!empty($item['separated'])) {
+                    $marked[] = $item;
+                } else {
+                    $unmarked[] = $item;
+                }
             }
-            $round = 2;
-        } else {
-            $round = 1;
+            return [
+                'marked'   => $shuffle($marked),
+                'unmarked' => $shuffle($unmarked),
+            ];
+        };
+
+        // --- Putaran 1: PM/SM/ATM (satu per kamar penerima) ---
+        $sLeads = $splitMarked($leads);
+        $take   = min(count($leads), $rooms);
+
+        $allLeads = array_merge($sLeads['marked'], $sLeads['unmarked']);
+        $chosenLeads = array_slice($allLeads, 0, $take);
+        $excessLeads = array_slice($allLeads, $take);
+        if (!empty($excessLeads)) {
+            $rest = array_merge($rest, $excessLeads);
         }
 
-        // Putaran untuk role yang wajib seimbang (mis. Programmer lalu Implementor)
+        $leadRooms = array_slice($shuffle(range(0, $rooms - 1)), 0, $take);
+        $round = 1;
+
+        if ($take > 0) {
+            $chosenMarked = array_values(array_filter($chosenLeads, fn ($p) => !empty($p['separated'])));
+            $chosenUnmarked = array_values(array_filter($chosenLeads, fn ($p) => empty($p['separated'])));
+
+            $markedCountInLeads = count($chosenMarked);
+            for ($i = 0; $i < $markedCountInLeads; $i++) {
+                $room = $leadRooms[$i];
+                $markedRooms[$room] = true;
+                $steps[] = self::step($chosenMarked[$i], $room, $count[$room]++, true, 1);
+            }
+            for ($i = 0; $i < count($chosenUnmarked); $i++) {
+                $room = $leadRooms[$markedCountInLeads + $i];
+                $steps[] = self::step($chosenUnmarked[$i], $room, $count[$room]++, true, 1);
+            }
+            $round = 2;
+        }
+
+        // --- Putaran untuk role yang wajib seimbang (mis. Programmer lalu Implementor) ---
         foreach ($balancedRoles as $bRole) {
-            $pool = $shuffle($byRole[$bRole] ?? []);
-            if (empty($pool)) {
+            $sPool = $splitMarked($byRole[$bRole] ?? []);
+            $poolTotal = count($sPool['marked']) + count($sPool['unmarked']);
+            if ($poolTotal === 0) {
                 continue;
             }
 
-            // Cari kamar yang masih punya slot
             $availableRooms = array_values(array_filter(
                 range(0, $rooms - 1),
                 fn ($k) => $count[$k] < $caps[$k]
             ));
 
-            $takeRole = min(count($pool), count($availableRooms));
-            if ($takeRole > 0) {
-                $chosenRooms = array_slice($shuffle($availableRooms), 0, $takeRole);
-                foreach ($chosenRooms as $room) {
-                    $p = array_shift($pool);
-                    $steps[] = self::step($p, $room, $count[$room]++, false, $round);
-                }
-                $round++;
+            $takeRole = min($poolTotal, count($availableRooms));
+            if ($takeRole === 0) {
+                continue;
             }
 
-            // Sisa role ini (jika ada lebih banyak dari jumlah kamar) masuk kolam umum
-            if (!empty($pool)) {
-                $rest = array_merge($rest, $pool);
+            $allPool = array_merge($sPool['marked'], $sPool['unmarked']);
+            $chosenPool = array_slice($allPool, 0, $takeRole);
+            $excessPool = array_slice($allPool, $takeRole);
+            if (!empty($excessPool)) {
+                $rest = array_merge($rest, $excessPool);
             }
+
+            $poolMarked = array_values(array_filter($chosenPool, fn ($p) => !empty($p['separated'])));
+            $poolUnmarked = array_values(array_filter($chosenPool, fn ($p) => empty($p['separated'])));
+
+            $candidateForMarked = array_values(array_filter(
+                $availableRooms,
+                fn ($r) => !isset($markedRooms[$r])
+            ));
+            $candidateForMarked = $shuffle($candidateForMarked);
+
+            $assignedMarkedRooms = array_slice($candidateForMarked, 0, count($poolMarked));
+            foreach ($assignedMarkedRooms as $r) {
+                $markedRooms[$r] = true;
+            }
+
+            $remainingAvailable = array_values(array_filter(
+                $availableRooms,
+                fn ($r) => !in_array($r, $assignedMarkedRooms, true)
+            ));
+            $remainingAvailable = $shuffle($remainingAvailable);
+            $assignedUnmarkedRooms = array_slice($remainingAvailable, 0, count($poolUnmarked));
+
+            $roundAssignments = [];
+            for ($i = 0; $i < count($poolMarked); $i++) {
+                $roundAssignments[] = ['person' => $poolMarked[$i], 'room' => $assignedMarkedRooms[$i]];
+            }
+            for ($i = 0; $i < count($poolUnmarked); $i++) {
+                $roundAssignments[] = ['person' => $poolUnmarked[$i], 'room' => $assignedUnmarkedRooms[$i]];
+            }
+
+            foreach ($shuffle($roundAssignments) as $item) {
+                $steps[] = self::step($item['person'], $item['room'], $count[$item['room']]++, false, $round);
+            }
+            $round++;
         }
 
-        // Putaran sisa peserta: tiap putaran = satu orang per kamar yang masih punya slot, urutan kamar acak.
+        // --- Putaran sisa peserta: tiap putaran = satu orang per kamar yang masih punya slot, urutan kamar acak ---
         $rest = $shuffle($rest);
         while ($rest) {
-            $placed = 0;
-            // Urutan kamar diacak ulang di tiap putaran (bukan 1, 2, 3, ...).
-            foreach ($shuffle(range(0, $rooms - 1)) as $k) {
-                if (! $rest) {
-                    break;
-                }
-                if ($count[$k] < $caps[$k]) {
-                    $steps[] = self::step(array_shift($rest), $k, $count[$k]++, false, $round);
-                    $placed++;
-                }
+            $sRest = $splitMarked($rest);
+            $availableRooms = array_values(array_filter(
+                range(0, $rooms - 1),
+                fn ($k) => $count[$k] < $caps[$k]
+            ));
+            if (empty($availableRooms)) {
+                break;
             }
-            if ($placed === 0) {
-                throw new \LogicException('Kapasitas kamar tidak cukup untuk semua peserta.');
+
+            $takeCount = min(count($rest), count($availableRooms));
+            $allRest = array_merge($sRest['marked'], $sRest['unmarked']);
+            $chosenRest = array_slice($allRest, 0, $takeCount);
+            $rest = array_slice($allRest, $takeCount);
+
+            $restMarked = array_values(array_filter($chosenRest, fn ($p) => !empty($p['separated'])));
+            $restUnmarked = array_values(array_filter($chosenRest, fn ($p) => empty($p['separated'])));
+
+            $candidateForMarked = array_values(array_filter(
+                $availableRooms,
+                fn ($r) => !isset($markedRooms[$r])
+            ));
+            $candidateForMarked = $shuffle($candidateForMarked);
+
+            $assignedMarkedRooms = array_slice($candidateForMarked, 0, count($restMarked));
+            foreach ($assignedMarkedRooms as $r) {
+                $markedRooms[$r] = true;
+            }
+
+            $remainingAvailable = array_values(array_filter(
+                $availableRooms,
+                fn ($r) => !in_array($r, $assignedMarkedRooms, true)
+            ));
+            $remainingAvailable = $shuffle($remainingAvailable);
+            $assignedUnmarkedRooms = array_slice($remainingAvailable, 0, count($restUnmarked));
+
+            $roundAssignments = [];
+            for ($i = 0; $i < count($restMarked); $i++) {
+                $roundAssignments[] = ['person' => $restMarked[$i], 'room' => $assignedMarkedRooms[$i]];
+            }
+            for ($i = 0; $i < count($restUnmarked); $i++) {
+                $roundAssignments[] = ['person' => $restUnmarked[$i], 'room' => $assignedUnmarkedRooms[$i]];
+            }
+
+            foreach ($shuffle($roundAssignments) as $item) {
+                $steps[] = self::step($item['person'], $item['room'], $count[$item['room']]++, false, $round);
             }
             $round++;
         }
@@ -183,8 +279,13 @@ final class DrawPlanner
     private static function step(array $p, int $room, int $slot, bool $lead, int $round): array
     {
         return [
-            'name' => $p['name'], 'role' => $p['role'], 'room' => $room,
-            'slot' => $slot, 'lead' => $lead, 'round' => $round,
+            'name'      => $p['name'],
+            'role'      => $p['role'],
+            'room'      => $room,
+            'slot'      => $slot,
+            'lead'      => $lead,
+            'round'     => $round,
+            'separated' => (bool) ($p['separated'] ?? false),
         ];
     }
 

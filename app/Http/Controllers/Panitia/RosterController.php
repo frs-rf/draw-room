@@ -35,6 +35,7 @@ class RosterController extends Controller
             $rows->push([
                 'type' => 'p', 'id' => $p->id, 'name' => $p->name, 'status' => 'diundi',
                 'role' => $p->role, 'group' => '', 'info' => $roles[$p->role]['label'] ?? $p->role,
+                'separated' => (bool) $p->separated,
             ]);
         }
 
@@ -43,6 +44,7 @@ class RosterController extends Controller
             $rows->push([
                 'type' => 'x', 'id' => $x->id, 'name' => $x->name, 'status' => 'luar',
                 'role' => '', 'group' => $x->group, 'info' => $x->group,
+                'separated' => false,
             ]);
         }
 
@@ -93,10 +95,11 @@ class RosterController extends Controller
         }
 
         $data = $request->validate([
-            'name'   => ['required', 'string', 'max:100'],
-            'status' => ['required', Rule::in(['diundi', 'luar'])],
-            'role'   => ['required_if:status,diundi', 'nullable', Rule::in(array_keys(config('draw.roles')))],
-            'group'  => ['required_if:status,luar', 'nullable', 'string', 'max:60'],
+            'name'      => ['required', 'string', 'max:100'],
+            'status'    => ['required', Rule::in(['diundi', 'luar'])],
+            'role'      => ['required_if:status,diundi', 'nullable', Rule::in(array_keys(config('draw.roles')))],
+            'group'     => ['required_if:status,luar', 'nullable', 'string', 'max:60'],
+            'separated' => ['nullable', 'boolean'],
         ]);
 
         $name = $this->clean($data['name']);
@@ -106,9 +109,16 @@ class RosterController extends Controller
                 ->withInput();
         }
 
-        DB::transaction(function () use ($data, $name, $current) {
+        $separated = $request->boolean('separated');
+
+        DB::transaction(function () use ($data, $name, $current, $separated) {
             if ($data['status'] === 'diundi') {
-                $attrs = ['name' => $name, 'role' => $data['role'], 'active' => true];
+                $attrs = [
+                    'name'      => $name,
+                    'role'      => $data['role'],
+                    'active'    => true,
+                    'separated' => $separated,
+                ];
 
                 if ($current instanceof Participant) {
                     $sort = $current->role === $data['role'] ? $current->sort : $this->nextSort($data['role']);
@@ -132,6 +142,22 @@ class RosterController extends Controller
         });
 
         return $this->done("$name disimpan.");
+    }
+
+    public function toggleSeparated(int $id): RedirectResponse
+    {
+        if ($r = $this->locked()) {
+            return $r;
+        }
+
+        $participant = Participant::findOrFail($id);
+        $participant->update(['separated' => ! $participant->separated]);
+
+        $statusText = $participant->separated
+            ? "{$participant->name} ditandai pisah kamar (tidak akan sekamar dengan sesama yang bertanda ini)."
+            : "Tanda pisah kamar untuk {$participant->name} dinonaktifkan.";
+
+        return $this->done($statusText);
     }
 
     private function find(string $type, int $id): Model

@@ -23,6 +23,12 @@
       Kelebihan {{ -$summary['lead_gap'] }} orang diundi bersama peserta lain, jadi satu kamar bisa berisi lebih dari 1.
     </div>
   @endif
+
+  @if (!empty($summary['separated_count']))
+    <div class="panel" style="margin-top: 10px; border-left: 4px solid var(--coral, #f97316)">
+      🚫 <b>Penanda Pisah Kamar:</b> Ada <b>{{ $summary['separated_count'] }}</b> peserta bertanda pisah kamar. Mereka dijamin <b>tidak akan ditempatkan dalam 1 kamar yang sama</b> (maksimal 1 orang per kamar).
+    </div>
+  @endif
 @else
   <div class="panel warn">Belum ada peserta aktif. Jalankan <code>php artisan db:seed</code>.</div>
 @endif

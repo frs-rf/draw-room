@@ -39,14 +39,20 @@
               <th>Nama</th>
               <th>Jabatan / Kelompok</th>
               <th>Status</th>
+              <th style="width: 130px">Pisah Kamar</th>
               <th style="width: 150px">Aksi</th>
             </tr>
           </thead>
           <tbody>
             @foreach ($rows as $r)
-              <tr data-s="{{ mb_strtolower($r['name'] . ' ' . $r['info'] . ' ' . ($r['status'] === 'diundi' ? 'ikut undian diundi' : 'di luar undian')) }}">
+              <tr data-s="{{ mb_strtolower($r['name'] . ' ' . $r['info'] . ' ' . ($r['status'] === 'diundi' ? 'ikut undian diundi' : 'di luar undian') . ($r['separated'] ? ' pisah kamar' : '')) }}">
                 <td>{{ $loop->iteration }}</td>
-                <td>{{ $r['name'] }}</td>
+                <td>
+                  {{ $r['name'] }}
+                  @if ($r['separated'])
+                    <span class="badge sep-active" title="Bertanda pisah kamar: tidak akan disatukan dalam 1 kamar dengan sesama yang bertanda ini" style="margin-left: 6px; font-size: 11px">🚫 Pisah</span>
+                  @endif
+                </td>
                 <td>{{ $r['info'] }}</td>
                 <td>
                   @if ($r['status'] === 'diundi')
@@ -55,11 +61,24 @@
                     <span class="badge out-draw">Di luar undian</span>
                   @endif
                 </td>
+                <td>
+                  @if ($r['status'] === 'diundi')
+                    <form method="POST" action="{{ route('panitia.roster.toggle-separated', ['id' => $r['id']]) }}" style="display:inline">
+                      @csrf
+                      <button type="submit" class="badge {{ $r['separated'] ? 'sep-active' : 'sep-inactive' }}" @disabled($running) title="{{ $r['separated'] ? 'Klik untuk membatalkan tanda pisah kamar' : 'Klik untuk menandai agar tidak 1 kamar dengan peserta bertanda ini' }}" style="cursor: pointer; border-style: solid;">
+                        {{ $r['separated'] ? '✓ Aktif' : '+ Beri Tanda' }}
+                      </button>
+                    </form>
+                  @else
+                    <span class="sub">—</span>
+                  @endif
+                </td>
                 <td class="act">
                   <button type="button" class="btn gh sm btn-edit" @disabled($running)
                     data-action="{{ route('panitia.roster.update', ['type' => $r['type'], 'id' => $r['id']]) }}"
                     data-name="{{ $r['name'] }}" data-status="{{ $r['status'] }}"
-                    data-role="{{ $r['role'] }}" data-group="{{ $r['group'] }}">Edit</button>
+                    data-role="{{ $r['role'] }}" data-group="{{ $r['group'] }}"
+                    data-separated="{{ $r['separated'] ? 1 : 0 }}">Edit</button>
                   <form method="POST" action="{{ route('panitia.roster.destroy', ['type' => $r['type'], 'id' => $r['id']]) }}"
                         data-name="{{ $r['name'] }}"
                         onsubmit="return confirm('Hapus ' + this.dataset.name + ' dari data?')" style="display:inline">
@@ -70,7 +89,7 @@
               </tr>
             @endforeach
             <tr id="empty-row" @if ($rows->isNotEmpty()) hidden @endif>
-              <td colspan="5" class="sub" style="text-align: center">Tidak ada data.</td>
+              <td colspan="6" class="sub" style="text-align: center">Tidak ada data.</td>
             </tr>
           </tbody>
         </table>
@@ -100,6 +119,13 @@
               <option value="{{ $key }}">{{ $meta['label'] }}</option>
             @endforeach
           </select>
+        </div>
+
+        <div id="wrap-sep" style="margin-top: 12px">
+          <label style="display: flex; align-items: flex-start; gap: 8px; font-weight: normal; cursor: pointer; font-size: 13.5px">
+            <input type="checkbox" name="separated" id="dseparated" value="1" style="margin-top: 3px" />
+            <span>🚫 <b>Pisah Kamar:</b> Jangan tempatkan dalam 1 kamar yang sama dengan sesama peserta yang bertanda ini.</span>
+          </label>
         </div>
 
         <div id="wrap-group" hidden>
@@ -141,6 +167,7 @@
       function syncStatus() {
         var luar = $('dstatus').value === 'luar';
         $('wrap-role').hidden = luar;
+        $('wrap-sep').hidden = luar;
         $('wrap-group').hidden = !luar;
         $('dgroup').required = luar;
       }
@@ -154,6 +181,7 @@
         $('dstatus').value = opts.status || 'diundi';
         if (opts.role) $('drole').value = opts.role;
         $('dgroup').value = opts.group || '';
+        $('dseparated').checked = opts.separated === '1' || opts.separated === 1 || opts.separated === true;
         syncStatus();
         dlg.showModal();
         $('dname').focus();
@@ -165,7 +193,8 @@
         b.addEventListener('click', function () {
           open({
             action: b.dataset.action, method: 'PUT', title: 'Edit peserta',
-            name: b.dataset.name, status: b.dataset.status, role: b.dataset.role, group: b.dataset.group
+            name: b.dataset.name, status: b.dataset.status, role: b.dataset.role, group: b.dataset.group,
+            separated: b.dataset.separated
           });
         });
       });

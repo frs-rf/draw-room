@@ -31,6 +31,8 @@ Route::middleware('auth')->prefix('panitia')->name('panitia.')->group(function (
     // Kelola peserta (satu tabel: diundi + di luar undian). type: p = peserta, x = di luar undian
     Route::get('/peserta', [RosterController::class, 'index'])->name('roster');
     Route::post('/peserta', [RosterController::class, 'store'])->name('roster.store');
+    Route::post('/peserta/{id}/toggle-separated', [RosterController::class, 'toggleSeparated'])
+        ->whereNumber('id')->name('roster.toggle-separated');
     Route::put('/peserta/{type}/{id}', [RosterController::class, 'update'])
         ->whereIn('type', ['p', 'x'])->whereNumber('id')->name('roster.update');
     Route::delete('/peserta/{type}/{id}', [RosterController::class, 'destroy'])

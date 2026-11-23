@@ -100,7 +100,7 @@ function start(app) {
     S.placed.push(st);
     const el = $('s' + st.room + '-' + st.slot);
     if (!el) return;
-    el.innerHTML = tag(st.role) + esc(st.name);
+    el.innerHTML = tag(st.role) + esc(st.name) + (st.separated ? ' <span title="Bertanda pisah kamar" style="color:#dc2626;font-size:11px;margin-left:4px">🚫</span>' : '');
     el.classList.add('on');
     if (meta(st.role).lead) el.classList.add('pmslot');
   }
@@ -238,7 +238,7 @@ function start(app) {
         if (!alive()) return;
         const last = n >= 5;
         $('rin').innerHTML = last
-          ? esc(st.name) + '<small>' + esc(meta(st.role).label) + '</small>'
+          ? esc(st.name) + (st.separated ? ' <span style="font-size:16px" title="Pisah Kamar">🚫</span>' : '') + '<small>' + esc(meta(st.role).label) + '</small>'
           : esc(cand[Math.floor(Math.random() * cand.length)]);
         c.classList.remove('flip');
         n++;
