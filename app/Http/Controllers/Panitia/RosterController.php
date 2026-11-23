@@ -109,7 +109,9 @@ class RosterController extends Controller
                 ->withInput();
         }
 
-        $separated = $request->boolean('separated');
+        $separated = $request->has('separated')
+            ? $request->boolean('separated')
+            : ($current instanceof Participant ? (bool) $current->separated : false);
 
         DB::transaction(function () use ($data, $name, $current, $separated) {
             if ($data['status'] === 'diundi') {
@@ -142,6 +144,33 @@ class RosterController extends Controller
         });
 
         return $this->done("$name disimpan.");
+    }
+
+    public function separatedIndex(): View
+    {
+        $participants = Participant::query()->where('active', true)->orderBy('role')->orderBy('sort')->get();
+        $total = $participants->count();
+        $rooms = (int) ceil($total / (int) config('draw.room_size'));
+        $markedCount = $participants->where('separated', true)->count();
+
+        return view('panitia.pisah_kamar', [
+            'participants' => $participants,
+            'roles'        => config('draw.roles'),
+            'rooms'        => $rooms,
+            'markedCount'  => $markedCount,
+            'running'      => $this->running(),
+        ]);
+    }
+
+    public function clearSeparated(): RedirectResponse
+    {
+        if ($r = $this->locked()) {
+            return $r;
+        }
+
+        Participant::query()->update(['separated' => false]);
+
+        return $this->done('Semua tanda pisah kamar telah direset.');
     }
 
     public function toggleSeparated(int $id): RedirectResponse

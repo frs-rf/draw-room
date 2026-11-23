@@ -42,7 +42,7 @@
             @continue(empty($members))
             <div class="grp">{{ $g['label'] }} ({{ count($members) }})</div>
             <div class="chips">
-              @foreach ($members as $p)<span class="chip">{{ $p['name'] }}@if(!empty($p['separated'])) <small style="color: #dc2626; font-size: 11px; font-weight: bold;" title="Bertanda pisah kamar">🚫</small>@endif</span>@endforeach
+              @foreach ($members as $p)<span class="chip">{{ $p['name'] }}</span>@endforeach
             </div>
           @endforeach
         </div>

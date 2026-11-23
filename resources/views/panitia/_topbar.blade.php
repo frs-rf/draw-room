@@ -3,6 +3,7 @@
   <span class="links">
     <a href="{{ route('panitia.console') }}">Undian</a>
     <a href="{{ route('panitia.roster') }}">Kelola peserta</a>
+    <a href="{{ route('panitia.separated') }}">Pisah kamar</a>
     <a href="{{ route('draw.viewer') }}" target="_blank" rel="noopener">Tampilan penonton ↗</a>
     <form method="POST" action="{{ route('logout') }}">
       @csrf
