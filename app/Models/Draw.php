@@ -26,10 +26,12 @@ class Draw extends Model
     /** Undian terbaru yang boleh dilihat publik. */
     public static function latestVisible(): ?self
     {
-        return static::query()
-            ->whereIn('status', [self::RUNNING, self::FINISHED])
-            ->latest('id')
-            ->first();
+        $latest = static::query()->latest('id')->first();
+        if (! $latest || $latest->status === self::CANCELLED) {
+            return null;
+        }
+
+        return $latest;
     }
 
     public function total(): int

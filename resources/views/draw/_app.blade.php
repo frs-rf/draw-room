@@ -18,6 +18,7 @@
       <div class="row">
         <button class="btn pri" id="start" type="button" @disabled(! $summary)>🌊 Mulai Undian</button>
         <button class="btn gh" id="last" type="button" hidden>Lihat Hasil Terakhir</button>
+        <button class="btn gh" id="cancel-setup" type="button" style="color: #dc2626; border-color: #fca5a5" hidden>Batalkan Undian</button>
       </div>
     @else
       <div class="panel waiting" id="waiting">🌊 Menunggu panitia memulai undian…</div>

@@ -348,7 +348,7 @@ function start(app) {
     E.channel('draw')
       .listen('.draw.started', (e) => applyDraw(e.draw, []))
       .listen('.draw.step', (e) => enqueue(e))
-      .listen('.draw.cancelled', (e) => { if (S.draw && S.draw.id === e.draw_id) resetToSetup(); })
+      .listen('.draw.cancelled', () => resetToSetup())
       .listen('.roster.updated', () => { if (!S.draw) location.reload(); });
 
     const conn = E.connector && E.connector.pusher && E.connector.pusher.connection;
@@ -401,6 +401,8 @@ function start(app) {
     const last = $('last');
     last.hidden = !S.draw;
     last.textContent = running ? '▶ Lanjutkan Undian' : 'Lihat Hasil Terakhir';
+    const cancelSetup = $('cancel-setup');
+    if (cancelSetup) cancelSetup.hidden = !S.draw;
   }
   async function drive() {
     if (S.driving || !S.draw || S.draw.status !== 'running') return;
@@ -444,6 +446,8 @@ function start(app) {
       drive();
     };
     $('last').onclick = () => { show('stage'); if (S.draw && S.draw.status === 'running') drive(); };
+    const cancelSetup = $('cancel-setup');
+    if (cancelSetup) cancelSetup.onclick = () => $('cancel').click();
     $('pause').onclick = () => {
       if (S.driving && !S.paused) S.paused = true;
       else { S.paused = false; drive(); }
