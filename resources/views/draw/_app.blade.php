@@ -12,7 +12,7 @@
   <div class="panel warn" id="notice" hidden></div>
 
   <section id="setup">
-    @include('draw._summary', ['summary' => $summary])
+    @include('draw._summary', ['summary' => $summary, 'isPanitia' => $isPanitia])
 
     @if ($isPanitia)
       <div class="row">

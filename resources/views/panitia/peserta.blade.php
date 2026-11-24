@@ -22,7 +22,7 @@
       </div>
     @endif
 
-    @include('draw._summary', ['summary' => $summary])
+    @include('draw._summary', ['summary' => $summary, 'isPanitia' => true])
 
     <div class="panel">
       <div class="tools">
