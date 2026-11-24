@@ -5,5 +5,4 @@
   <main>
     @include('draw._app')
   </main>
-  <footer class="foot"><a href="{{ route('login') }}">Login panitia</a></footer>
 @endsection
